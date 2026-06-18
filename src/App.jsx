@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { workouts, dayLabels } from './data/workouts.js'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
-import WorkoutTable from './components/WorkoutTable.jsx'
+import Session from './components/Session.jsx'
 import History from './components/History.jsx'
 
 function todayISO() {
@@ -10,45 +10,65 @@ function todayISO() {
   return new Date(d - tz).toISOString().slice(0, 10)
 }
 
+// Build a fresh, editable session from a day's defaults.
+function newSession(day) {
+  return {
+    day,
+    date: todayISO(),
+    exercises: workouts[day].map((x) => ({ ...x, done: false })),
+  }
+}
+
 export default function App() {
-  const [view, setView] = useState(1) // 1 | 2 | 3 | 'history'
-  const [date, setDate] = useState(todayISO)
-  const [inputs, setInputs] = useState({})
+  const [view, setView] = useState('home') // 'home' | 'session' | 'history'
+  const [activeDay, setActiveDay] = useState(1)
+  // Live session persists too, so a refresh mid-workout doesn't lose progress.
+  const [session, setSession] = useLocalStorage('gymSession', null)
   const [history, setHistory] = useLocalStorage('gymHistory', [])
 
-  const showDay = (day) => {
-    setView(day)
-    setInputs({}) // fresh inputs per day, matching original reset behaviour
+  const startWorkout = () => {
+    setSession(newSession(activeDay))
+    setView('session')
   }
 
-  const onInputChange = (key, value) => {
-    setInputs((prev) => ({ ...prev, [key]: value }))
-  }
+  const resumeWorkout = () => setView('session')
 
-  const saveWorkout = () => {
-    const day = view
-    const entries = workouts[day].map((x, i) => ({
-      exercise: x[0],
-      target: `${x[1]} x ${x[2]}`,
-      planned: x[3],
-      actualWeight: inputs[`w-${i}`] || '',
-      repsNotes: inputs[`r-${i}`] || '',
+  const setWeight = (index, weight) => {
+    setSession((s) => ({
+      ...s,
+      exercises: s.exercises.map((e, i) => (i === index ? { ...e, weight } : e)),
     }))
-    setHistory((prev) => [...prev, { date, day, entries }])
-    alert('Workout saved.')
   }
 
-  const resetToday = () => setInputs({})
+  const toggleDone = (index) => {
+    setSession((s) => ({
+      ...s,
+      exercises: s.exercises.map((e, i) => (i === index ? { ...e, done: !e.done } : e)),
+    }))
+  }
 
-  const deleteEntry = (index) => {
-    setHistory((prev) => prev.filter((_, i) => i !== index))
+  const finishWorkout = () => {
+    setHistory((prev) => [...prev, { ...session, savedAt: Date.now() }])
+    setSession(null)
+    setView('history')
+  }
+
+  const cancelWorkout = () => {
+    if (confirm('Discard this workout? Progress will be lost.')) {
+      setSession(null)
+      setView('home')
+    }
+  }
+
+  const deleteEntry = (savedAt) => {
+    setHistory((prev) => prev.filter((h) => h.savedAt !== savedAt))
   }
 
   const exportCSV = () => {
-    let csv = 'date,day,exercise,target,planned,actual_weight,reps_notes\n'
+    let csv = 'date,day,exercise,sets,reps,weight,unit,completed\n'
     history.forEach((h) =>
-      h.entries.forEach((e) => {
-        const row = [h.date, h.day, e.exercise, e.target, e.planned, e.actualWeight, e.repsNotes]
+      h.exercises.forEach((e) => {
+        const row = [h.date, h.day, e.name, e.sets, e.reps, e.weight ?? '', e.unit, e.done ? 'yes' : 'no']
           .map((v) => `"${String(v ?? '').replaceAll('"', '""')}"`)
           .join(',')
         csv += row + '\n'
@@ -65,62 +85,77 @@ export default function App() {
   return (
     <>
       <header>
-        <h1>3-Day Muscle & Strength Tracker</h1>
-        <p>Track weights, reps, notes and progression. Data saves on this device.</p>
-      </header>
-
-      <main>
+        <h1>3-Day Strength Tracker</h1>
         <div className="tabs">
-          {[1, 2, 3].map((d) => (
-            <button
-              key={d}
-              className={view === d ? 'active' : ''}
-              onClick={() => showDay(d)}
-            >
-              {dayLabels[d]}
-            </button>
-          ))}
-          <button
-            className={view === 'history' ? 'active' : ''}
-            onClick={() => setView('history')}
-          >
+          <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>
+            Workout
+          </button>
+          <button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}>
             History
           </button>
         </div>
+      </header>
 
-        {view !== 'history' && (
+      <main>
+        {view === 'home' && (
           <>
-            <section className="card">
-              <label>
-                Date:{' '}
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </label>
-            </section>
+            {session && (
+              <section className="card resume">
+                <div>
+                  Workout in progress — <strong>{dayLabels[session.day]}</strong>
+                </div>
+                <button className="primary" onClick={resumeWorkout}>Resume</button>
+              </section>
+            )}
 
-            <WorkoutTable
-              exercises={workouts[view]}
-              inputs={inputs}
-              onChange={onInputChange}
-            />
-
-            <div className="actions">
-              <button className="primary" onClick={saveWorkout}>Save workout</button>
-              <button onClick={exportCSV}>Export CSV</button>
-              <button onClick={resetToday}>Reset today</button>
+            <div className="day-picker">
+              {[1, 2, 3].map((d) => (
+                <button
+                  key={d}
+                  className={activeDay === d ? 'day active' : 'day'}
+                  onClick={() => setActiveDay(d)}
+                >
+                  {dayLabels[d]}
+                </button>
+              ))}
             </div>
 
             <section className="card">
-              <h2>Progression rule</h2>
-              <p>
-                When you complete all prescribed reps with clean form, increase upper body
-                dumbbells by the next available jump, barbell/cable by 2.5–5kg, and lower body by
-                5kg. Assisted pull-up: reduce assistance over time.
-              </p>
+              <h2>{dayLabels[activeDay]}</h2>
+              <ul className="preview">
+                {workouts[activeDay].map((x, i) => (
+                  <li key={i}>
+                    <span>{x.name}</span>
+                    <span className="small">{x.sets} × {x.reps}</span>
+                  </li>
+                ))}
+              </ul>
             </section>
+
+            <button className="primary big start" onClick={startWorkout}>
+              ▶ Start workout
+            </button>
           </>
         )}
 
-        {view === 'history' && <History history={history} onDelete={deleteEntry} />}
+        {view === 'session' && session && (
+          <Session
+            session={session}
+            dayLabel={dayLabels[session.day]}
+            onSetWeight={setWeight}
+            onToggleDone={toggleDone}
+            onFinish={finishWorkout}
+            onCancel={cancelWorkout}
+          />
+        )}
+
+        {view === 'session' && !session && (
+          <section className="card">No active workout. Go to Workout to start one.</section>
+        )}
+
+        {view === 'history' && (
+          <History history={history} onDelete={deleteEntry} onExport={exportCSV} />
+        )}
       </main>
     </>
   )
