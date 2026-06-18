@@ -1,0 +1,3 @@
+# Local project identifier for the Supabase CLI / GitHub integration.
+# This is NOT your remote project ref — the integration links that in the dashboard.
+project_id = "workout-app"
