@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>3-Day Strength Tracker</title>
+  <style>
+    :root { --bg:#0f1115; --card:#171a21; --muted:#9aa4b2; --text:#f4f6f8; --line:#2a2f3a; --accent:#7dd3fc; --good:#86efac; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:rgba(15,17,21,.96); z-index:2; }
+    h1 { margin:0 0 6px; font-size:24px; }
+    p { color:var(--muted); margin:0; }
+    main { max-width:980px; margin:0 auto; padding:18px; }
+    .tabs { display:flex; gap:8px; margin:14px 0 18px; flex-wrap:wrap; }
+    button, select, input { border:1px solid var(--line); background:#11141a; color:var(--text); border-radius:10px; padding:10px 12px; font-size:15px; }
+    button { cursor:pointer; }
+    button.active { border-color:var(--accent); color:var(--accent); }
+    button.primary { background:var(--accent); color:#061016; border:0; font-weight:700; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:14px; }
+    .row { display:grid; grid-template-columns: 1.2fr .7fr .7fr .7fr .9fr; gap:8px; align-items:center; }
+    .head { color:var(--muted); font-size:13px; margin-bottom:8px; }
+    .exercise { font-weight:700; }
+    .small { color:var(--muted); font-size:13px; margin-top:4px; }
+    input { width:100%; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0; }
+    .history-item { border-top:1px solid var(--line); padding:10px 0; color:var(--muted); }
+    .done { color:var(--good); font-weight:700; }
+    @media (max-width:760px) {
+      .row { grid-template-columns:1fr 1fr; }
+      .head { display:none; }
+      .exercise { grid-column:1/-1; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>3-Day Muscle & Strength Tracker</h1>
+  <p>Track weights, reps, notes and progression. Data saves on this device.</p>
+</header>
+
+<main>
+  <div class="tabs">
+    <button id="day1" onclick="showDay(1)">Day 1 – Strength</button>
+    <button id="day2" onclick="showDay(2)">Day 2 – Muscle</button>
+    <button id="day3" onclick="showDay(3)">Day 3 – Athletic</button>
+    <button onclick="showHistory()">History</button>
+  </div>
+
+  <section class="card">
+    <label>Date: <input id="date" type="date"></label>
+  </section>
+
+  <div id="workout"></div>
+
+  <div class="actions">
+    <button class="primary" onclick="saveWorkout()">Save workout</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="resetToday()">Reset today</button>
+  </div>
+
+  <section class="card">
+    <h2 style="margin-top:0">Progression rule</h2>
+    <p>When you complete all prescribed reps with clean form, increase upper body dumbbells by the next available jump, barbell/cable by 2.5–5kg, and lower body by 5kg. Assisted pull-up: reduce assistance over time.</p>
+  </section>
+</main>
+
+<script>
+const workouts = {
+  1: [
+    ["Incline Dumbbell Press", "4", "6–8", "18 kg each / 36 kg total"],
+    ["Hip Thrust / Barbell replacement for RDL", "4", "8", "50 kg total"],
+    ["Chest Supported Row", "4", "8", "20 kg each / 40 kg total"],
+    ["Bulgarian Split Squat", "3", "8 each leg", "10 kg each / 20 kg total"],
+    ["Assisted Pull-Up", "3", "8", "40 kg assistance"],
+    ["Seated DB Shoulder Press", "3", "10", "12.5 kg each / 25 kg total"],
+    ["Plank", "3", "60 sec", "Bodyweight"]
+  ],
+  2: [
+    ["Leg Press", "4", "10", "120 kg total"],
+    ["Olympic Bench Press", "4", "8", "35 kg total"],
+    ["Seated Cable Row", "4", "10", "45 kg total"],
+    ["Assisted Pull-Up", "3", "8", "40 kg assistance"],
+    ["Pec Deck Fly", "3", "12", "25 kg total"],
+    ["Face Pull", "3", "15", "20 kg total"],
+    ["DB Bicep Curl", "3", "12", "12.5 kg each / 25 kg total"],
+    ["Tricep Pushdown", "3", "12", "30 kg total"]
+  ],
+  3: [
+    ["Goblet Squat", "4", "8", "24 kg total"],
+    ["Seated Cable Row", "4", "10", "45 kg total"],
+    ["Olympic Bench Press", "4", "8", "35 kg total"],
+    ["Walking Lunges", "3", "10 each leg", "10 kg each / 20 kg total"],
+    ["Assisted Pull-Up", "3", "8", "40 kg assistance"],
+    ["Reverse Pec Deck", "3", "15", "20 kg total"],
+    ["Farmer's Carry", "3", "30 m", "25 kg each / 50 kg total"],
+    ["Dead Bug", "3", "10 each side", "Bodyweight"]
+  ]
+};
+
+let currentDay = 1;
+document.getElementById("date").valueAsDate = new Date();
+
+function showDay(day) {
+  currentDay = day;
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+  document.getElementById("day"+day).classList.add("active");
+  const el = document.getElementById("workout");
+  el.innerHTML = `<div class="card row head">
+    <div>Exercise</div><div>Target</div><div>Planned weight</div><div>Actual weight</div><div>Actual reps / notes</div>
+  </div>`;
+  workouts[day].forEach((x,i) => {
+    el.innerHTML += `<div class="card row">
+      <div><div class="exercise">${x[0]}</div><div class="small">${x[1]} sets × ${x[2]}</div></div>
+      <div>${x[1]} × ${x[2]}</div>
+      <div>${x[3]}</div>
+      <div><input id="w-${i}" placeholder="e.g. 18kg each"></div>
+      <div><input id="r-${i}" placeholder="e.g. 8,8,7,6 OK"></div>
+    </div>`;
+  });
+}
+
+function saveWorkout() {
+  const date = document.getElementById("date").value;
+  const entries = workouts[currentDay].map((x,i)=>({
+    exercise:x[0], target:`${x[1]} x ${x[2]}`, planned:x[3],
+    actualWeight:document.getElementById(`w-${i}`).value,
+    repsNotes:document.getElementById(`r-${i}`).value
+  }));
+  const history = JSON.parse(localStorage.getItem("gymHistory") || "[]");
+  history.push({date, day:currentDay, entries});
+  localStorage.setItem("gymHistory", JSON.stringify(history));
+  alert("Workout saved.");
+}
+
+function showHistory() {
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+  const history = JSON.parse(localStorage.getItem("gymHistory") || "[]").reverse();
+  const el = document.getElementById("workout");
+  if (!history.length) { el.innerHTML = `<section class="card">No saved workouts yet.</section>`; return; }
+  el.innerHTML = `<section class="card"><h2 style="margin-top:0">History</h2>` + history.map(h => 
+    `<div class="history-item"><span class="done">${h.date}</span> — Day ${h.day}<br>` +
+    h.entries.map(e => `${e.exercise}: ${e.actualWeight || e.planned}; ${e.repsNotes || "no notes"}`).join("<br>") +
+    `</div>`).join("") + `</section>`;
+}
+
+function exportCSV() {
+  const history = JSON.parse(localStorage.getItem("gymHistory") || "[]");
+  let csv = "date,day,exercise,target,planned,actual_weight,reps_notes\n";
+  history.forEach(h => h.entries.forEach(e => {
+    const row = [h.date,h.day,e.exercise,e.target,e.planned,e.actualWeight,e.repsNotes]
+      .map(v => `"${String(v || "").replaceAll('"','""')}"`).join(",");
+    csv += row + "\n";
+  }));
+  const blob = new Blob([csv], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "gym-tracker.csv";
+  a.click();
+}
+
+function resetToday() { showDay(currentDay); }
+showDay(1);
+</script>
+</body>
+</html>
