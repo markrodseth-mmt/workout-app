@@ -243,6 +243,35 @@ export async function deleteSession(id) {
   if (error) throw error
 }
 
+// ── User settings ────────────────────────────────────────────────────────────
+
+// No row until the user first saves; fall back to the schema default.
+// Tolerate a missing table (migration not yet applied) so the rest of the
+// app still loads — settings just use the default until the table exists.
+export async function fetchSettings() {
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('weekly_workout_goal')
+    .maybeSingle()
+  if (error) {
+    if (error.code === '42P01' || /does not exist|schema cache/i.test(error.message || '')) {
+      return { weeklyWorkoutGoal: 3 }
+    }
+    throw error
+  }
+  return { weeklyWorkoutGoal: data?.weekly_workout_goal ?? 3 }
+}
+
+export async function saveSettings(userId, { weeklyWorkoutGoal }) {
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert(
+      { user_id: userId, weekly_workout_goal: weeklyWorkoutGoal, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    )
+  if (error) throw error
+}
+
 // ── First-run seed ───────────────────────────────────────────────────────────
 
 export async function seedDefaults(userId) {

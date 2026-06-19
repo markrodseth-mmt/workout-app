@@ -17,6 +17,8 @@
   --good: #34d399;
   --good-bg: #0f2a20;
   --good-ink: #06231a;
+  --warn: #fbbf24;
+  --warn-bg: #2a2410;
   --danger: #fb7185;
   --danger-bg: #2a1419;
   --danger-line: #4a2730;
@@ -289,6 +291,37 @@ button.alt-option {
 .done-mark { color: var(--good); }
 .skip-mark { color: var(--faint); }
 .notes { margin: 8px 0 0; white-space: pre-wrap; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+
+/* ── Activity ────────────────────────────────────────────────────────────── */
+.goal-card { display: flex; flex-direction: column; gap: 14px; }
+.goal-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.goal-label { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.goal-stepper { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+.goal-stepper .step {
+  width: 44px; height: 44px; min-height: 0; padding: 0; flex: 0 0 auto;
+  font-size: 24px; font-weight: 700; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; background: var(--surface-3);
+}
+.goal-value { min-width: 28px; text-align: center; font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+
+.activity-legend { display: flex; flex-wrap: wrap; gap: 14px; }
+.activity-legend .lg { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.activity-legend .lg i { width: 11px; height: 11px; border-radius: 999px; display: inline-block; }
+.activity-legend .lg.met i { background: var(--good); }
+.activity-legend .lg.partial i { background: var(--warn); }
+.activity-legend .lg.missed i { background: var(--danger); }
+
+.activity-month h3 { margin-bottom: 14px; }
+.activity-weeks { display: flex; flex-wrap: wrap; gap: 16px 14px; }
+.week-ring { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.week-cap { font-size: 12px; }
+
+.ring-svg .ring-track { stroke: var(--surface-3); }
+.ring-svg.met { color: var(--good); }
+.ring-svg.partial { color: var(--warn); }
+.ring-svg.missed { color: var(--danger); }
+.ring-num { fill: var(--text); font-size: 15px; font-weight: 700; }
+.ring-svg.missed .ring-num { fill: var(--faint); }
 
 /* ── Auth ────────────────────────────────────────────────────────────────── */
 .auth { max-width: 420px; margin: 12vh auto 0; }

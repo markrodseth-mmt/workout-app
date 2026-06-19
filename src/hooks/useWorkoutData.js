@@ -9,6 +9,7 @@ export function useWorkoutData(userId) {
   const [workouts, setWorkouts] = useState([])
   const [schedule, setSchedule] = useState([])
   const [sessions, setSessions] = useState([])
+  const [settings, setSettings] = useState({ weeklyWorkoutGoal: 3 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   // Dedupe concurrent loads (e.g. StrictMode's double effect) so first-run
@@ -25,17 +26,19 @@ export function useWorkoutData(userId) {
         await db.seedDefaults(userId)
         lib = await db.fetchLibrary()
       }
-      const [alts, w, sched, hist] = await Promise.all([
+      const [alts, w, sched, hist, sett] = await Promise.all([
         db.fetchAlternates(),
         db.fetchWorkouts(),
         db.fetchSchedule(),
         db.fetchSessions(),
+        db.fetchSettings(),
       ])
       setLibrary(lib)
       setAlternates(alts)
       setWorkouts(w)
       setSchedule(sched)
       setSessions(hist)
+      setSettings(sett)
     } catch (e) {
       setError(e.message || String(e))
     } finally {
@@ -70,17 +73,29 @@ export function useWorkoutData(userId) {
     setSessions((prev) => prev.filter((s) => s.id !== id))
   }, [])
 
+  // Optimistic: reflect the new goal immediately, then persist.
+  const saveSettings = useCallback(
+    async (patch) => {
+      let next
+      setSettings((prev) => (next = { ...prev, ...patch }))
+      await db.saveSettings(userId, next)
+    },
+    [userId],
+  )
+
   return {
     library,
     alternates,
     workouts,
     schedule,
     sessions,
+    settings,
     loading,
     error,
     reload: load,
     saveSession,
     removeSession,
+    saveSettings,
     db,
     userId,
   }

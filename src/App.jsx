@@ -8,6 +8,7 @@ import Home from './components/Home.jsx'
 import Plan from './components/Plan.jsx'
 import Session from './components/Session.jsx'
 import History from './components/History.jsx'
+import Activity from './components/Activity.jsx'
 import Workouts from './components/Workouts.jsx'
 import Library from './components/Library.jsx'
 
@@ -63,9 +64,9 @@ export default function App() {
 
 function AppShell({ user, signOut }) {
   const data = useWorkoutData(user.id)
-  const { library, alternates, workouts, schedule, sessions, loading, error, saveSession, removeSession } = data
+  const { library, alternates, workouts, schedule, sessions, settings, loading, error, saveSession, removeSession, saveSettings } = data
 
-  const [view, setView] = useState('home') // home | plan | session | workouts | library | history
+  const [view, setView] = useState('home') // home | plan | session | workouts | library | history | activity
   // Live session persists locally so a refresh mid-workout doesn't lose progress.
   const [session, setSession] = useLocalStorage('liveSession', null)
 
@@ -141,6 +142,7 @@ function AppShell({ user, signOut }) {
     ['plan', 'Plan', 'calendar'],
     ['workouts', 'Workouts', 'dumbbell'],
     ['library', 'Library', 'book'],
+    ['activity', 'Activity', 'activity'],
     ['history', 'History', 'clock'],
   ]
   const titles = {
@@ -148,6 +150,7 @@ function AppShell({ user, signOut }) {
     plan: 'Plan',
     workouts: 'Workouts',
     library: 'Library',
+    activity: 'Activity',
     history: 'History',
     session: session?.workoutName || 'Workout',
   }
@@ -210,6 +213,9 @@ function AppShell({ user, signOut }) {
 
         {!loading && view === 'workouts' && <Workouts data={data} />}
         {!loading && view === 'library' && <Library data={data} />}
+        {!loading && view === 'activity' && (
+          <Activity sessions={sessions} settings={settings} onSaveSettings={saveSettings} />
+        )}
         {!loading && view === 'history' && (
           <History history={sessions} onDelete={removeSession} />
         )}
@@ -248,6 +254,8 @@ function Icon({ name }) {
       return (<svg {...p}><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19a2 2 0 0 1 2-2h13" /></svg>)
     case 'clock':
       return (<svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /></svg>)
+    case 'activity':
+      return (<svg {...p}><path d="M21 12a9 9 0 1 1-6.2-8.56" /><circle cx="12" cy="12" r="3.4" /></svg>)
     case 'signout':
       return (<svg {...p}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>)
     default:
