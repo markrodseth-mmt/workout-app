@@ -109,6 +109,8 @@ main {
 .tabbar .tab.active { color: var(--accent); }
 .tabbar .tab:active { color: var(--text); }
 
+.header-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.header-left h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -121,8 +123,11 @@ main {
   border-radius: 999px;
   background: none;
   color: var(--muted);
+  flex: 0 0 auto;
 }
 .icon-btn:active { background: var(--surface-2); color: var(--text); }
+.icon-btn.active { color: var(--accent); }
+.header-left .icon-btn { margin-left: -8px; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 button {
@@ -188,7 +193,16 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
   background: linear-gradient(135deg, rgba(108, 140, 255, 0.16), rgba(108, 140, 255, 0.06));
   border-color: rgba(108, 140, 255, 0.4);
 }
-.resume button { min-height: 44px; }
+.resume button { min-height: 44px; flex: 0 0 auto; }
+.resume-info { min-width: 0; }
+.resume-name { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; margin-top: 2px; }
+.no-resume { color: var(--muted); }
+
+/* Home quick-start rows */
+.home-start { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.home-start .plan-title { min-width: 0; }
+.home-start button.start-sm { flex: 0 0 auto; min-height: 46px; padding: 0 18px; }
+button.link.inline { display: inline; padding: 0; min-height: 0; font-size: inherit; text-decoration: underline; }
 
 .plan-row { display: flex; flex-direction: column; gap: 14px; }
 .plan-main { min-width: 0; }

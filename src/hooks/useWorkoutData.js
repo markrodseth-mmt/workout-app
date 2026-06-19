@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as db from '../lib/db.js'
 
 // Loads the signed-in user's library, workouts, weekly plan and history,
@@ -11,8 +11,11 @@ export function useWorkoutData(userId) {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Dedupe concurrent loads (e.g. StrictMode's double effect) so first-run
+  // seeding can't race and insert the default program twice.
+  const inFlight = useRef(null)
 
-  const load = useCallback(async () => {
+  const runLoad = useCallback(async () => {
     if (!userId) return
     setLoading(true)
     setError(null)
@@ -39,6 +42,16 @@ export function useWorkoutData(userId) {
       setLoading(false)
     }
   }, [userId])
+
+  // Public load: coalesce overlapping calls onto a single in-flight promise.
+  const load = useCallback(() => {
+    if (inFlight.current) return inFlight.current
+    const p = runLoad().finally(() => {
+      inFlight.current = null
+    })
+    inFlight.current = p
+    return p
+  }, [runLoad])
 
   useEffect(() => {
     load()

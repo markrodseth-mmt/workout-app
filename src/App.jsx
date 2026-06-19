@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth.js'
 import { useWorkoutData } from './hooks/useWorkoutData.js'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
 import Auth from './components/Auth.jsx'
+import Home from './components/Home.jsx'
 import Plan from './components/Plan.jsx'
 import Session from './components/Session.jsx'
 import History from './components/History.jsx'
@@ -64,7 +65,7 @@ function AppShell({ user, signOut }) {
   const data = useWorkoutData(user.id)
   const { library, alternates, workouts, schedule, sessions, loading, error, saveSession, removeSession } = data
 
-  const [view, setView] = useState('plan') // plan | session | workouts | library | history
+  const [view, setView] = useState('home') // home | plan | session | workouts | library | history
   // Live session persists locally so a refresh mid-workout doesn't lose progress.
   const [session, setSession] = useLocalStorage('liveSession', null)
 
@@ -127,7 +128,7 @@ function AppShell({ user, signOut }) {
   const cancelWorkout = () => {
     if (confirm('Discard this workout? Progress will be lost.')) {
       setSession(null)
-      setView('plan')
+      setView('home')
     }
   }
 
@@ -143,6 +144,7 @@ function AppShell({ user, signOut }) {
     ['history', 'History', 'clock'],
   ]
   const titles = {
+    home: 'Workout',
     plan: 'Plan',
     workouts: 'Workouts',
     library: 'Library',
@@ -153,7 +155,16 @@ function AppShell({ user, signOut }) {
   return (
     <div className="app">
       <header>
-        <h1>{titles[view]}</h1>
+        <div className="header-left">
+          <button
+            className={view === 'home' ? 'icon-btn active' : 'icon-btn'}
+            onClick={() => setView('home')}
+            aria-label="Home"
+          >
+            <Icon name="home" />
+          </button>
+          <h1>{titles[view]}</h1>
+        </div>
         <button className="icon-btn" onClick={handleSignOut} aria-label="Sign out">
           <Icon name="signout" />
         </button>
@@ -162,6 +173,16 @@ function AppShell({ user, signOut }) {
       <main>
         {error && <section className="card auth-msg error">{error}</section>}
         {loading && <Centered>Loading your workouts…</Centered>}
+
+        {!loading && view === 'home' && (
+          <Home
+            data={data}
+            liveSession={session}
+            onStart={startWorkout}
+            onResume={() => setView('session')}
+            onGoToPlan={() => setView('plan')}
+          />
+        )}
 
         {!loading && view === 'plan' && (
           <Plan
@@ -217,6 +238,8 @@ function AppShell({ user, signOut }) {
 function Icon({ name }) {
   const p = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round' }
   switch (name) {
+    case 'home':
+      return (<svg {...p}><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19zM9.5 20.5v-6h5v6" /></svg>)
     case 'calendar':
       return (<svg {...p}><rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9h18M8 2.5v4M16 2.5v4" /></svg>)
     case 'dumbbell':
