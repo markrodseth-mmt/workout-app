@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { isSupabaseConfigured } from './lib/supabase.js'
 import { useAuth } from './hooks/useAuth.js'
 import { useWorkoutData } from './hooks/useWorkoutData.js'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
 import Auth from './components/Auth.jsx'
+import Plan from './components/Plan.jsx'
 import Session from './components/Session.jsx'
 import History from './components/History.jsx'
-import WorkoutEditor from './components/WorkoutEditor.jsx'
+import Workouts from './components/Workouts.jsx'
+import Library from './components/Library.jsx'
 
 function todayISO() {
   const d = new Date()
@@ -14,15 +16,37 @@ function todayISO() {
   return new Date(d - tz).toISOString().slice(0, 10)
 }
 
-// Build a fresh, editable session from a day's template.
-function newSession(day) {
+// Build a fresh, editable live session from a workout template.
+function newSession(workout, library, alternates) {
+  if (workout.category !== 'gym') {
+    return {
+      workoutId: workout.id,
+      workoutName: workout.name,
+      category: workout.category,
+      date: todayISO(),
+      durationMin: 60,
+      notes: '',
+    }
+  }
+  const libById = Object.fromEntries(library.map((l) => [l.id, l]))
+  const altsFor = (id) => (alternates[id] || []).map((aid) => libById[aid]).filter(Boolean)
   return {
-    dayId: day.id,
-    dayLabel: day.label,
+    workoutId: workout.id,
+    workoutName: workout.name,
+    category: 'gym',
     date: todayISO(),
-    exercises: day.exercises.map((e) => ({
-      name: e.name, sets: e.sets, reps: e.reps,
-      weight: e.weight, step: e.step, unit: e.unit, done: false,
+    exercises: workout.exercises.map((we) => ({
+      exerciseId: we.exercise_id,
+      swappedFromId: null,
+      name: we.exercise?.name ?? 'Exercise',
+      muscleGroup: we.exercise?.muscle_group ?? '',
+      sets: we.sets,
+      reps: we.reps,
+      weight: we.target_weight,
+      step: we.step ?? we.exercise?.step ?? 2.5,
+      unit: we.exercise?.unit ?? 'kg',
+      done: false,
+      alternates: altsFor(we.exercise_id),
     })),
   }
 }
@@ -38,31 +62,57 @@ export default function App() {
 
 function AppShell({ user, signOut }) {
   const data = useWorkoutData(user.id)
-  const { days, sessions, loading, error, saveSession, removeSession } = data
+  const { library, alternates, workouts, schedule, sessions, loading, error, saveSession, removeSession } = data
 
-  const [view, setView] = useState('home') // 'home' | 'session' | 'history' | 'editor'
-  const [activeDayId, setActiveDayId] = useState(null)
+  const [view, setView] = useState('plan') // plan | session | workouts | library | history
   // Live session persists locally so a refresh mid-workout doesn't lose progress.
-  const [session, setSession] = useLocalStorage('gymSession', null)
+  const [session, setSession] = useLocalStorage('liveSession', null)
 
-  // Default the picker to the first day once data loads.
-  useEffect(() => {
-    if (!activeDayId && days.length) setActiveDayId(days[0].id)
-  }, [days, activeDayId])
-
-  const activeDay = days.find((d) => d.id === activeDayId) || days[0]
-
-  const startWorkout = () => {
-    if (!activeDay) return
-    setSession(newSession(activeDay))
+  const startWorkout = (workout) => {
+    setSession(newSession(workout, library, alternates))
     setView('session')
   }
 
-  const setWeight = (index, weight) =>
-    setSession((s) => ({ ...s, exercises: s.exercises.map((e, i) => (i === index ? { ...e, weight } : e)) }))
+  // ── Gym live-session mutations ──
+  const patchExercise = (index, patch) =>
+    setSession((s) => ({
+      ...s,
+      exercises: s.exercises.map((e, i) => (i === index ? { ...e, ...patch } : e)),
+    }))
 
+  const setWeight = (index, weight) => patchExercise(index, { weight })
   const toggleDone = (index) =>
-    setSession((s) => ({ ...s, exercises: s.exercises.map((e, i) => (i === index ? { ...e, done: !e.done } : e)) }))
+    setSession((s) => ({
+      ...s,
+      exercises: s.exercises.map((e, i) => (i === index ? { ...e, done: !e.done } : e)),
+    }))
+
+  // Swap exercise `index` for one of its alternates (a library row).
+  const chooseAlternate = (index, alt) =>
+    setSession((s) => ({
+      ...s,
+      exercises: s.exercises.map((e, i) => {
+        if (i !== index) return e
+        const altsFor = (alternates[alt.id] || [])
+          .map((aid) => library.find((l) => l.id === aid))
+          .filter(Boolean)
+        return {
+          ...e,
+          // Remember the originally prescribed exercise the first time we swap.
+          swappedFromId: e.swappedFromId ?? e.exerciseId,
+          exerciseId: alt.id,
+          name: alt.name,
+          muscleGroup: alt.muscle_group,
+          weight: alt.default_weight,
+          step: alt.step ?? 2.5,
+          unit: alt.unit ?? 'kg',
+          alternates: altsFor,
+        }
+      }),
+    }))
+
+  // ── Simple (tennis/yoga) live-session mutations ──
+  const patchSimple = (patch) => setSession((s) => ({ ...s, ...patch }))
 
   const finishWorkout = async () => {
     try {
@@ -77,7 +127,7 @@ function AppShell({ user, signOut }) {
   const cancelWorkout = () => {
     if (confirm('Discard this workout? Progress will be lost.')) {
       setSession(null)
-      setView('home')
+      setView('plan')
     }
   }
 
@@ -86,35 +136,26 @@ function AppShell({ user, signOut }) {
     signOut()
   }
 
-  const exportCSV = () => {
-    let csv = 'date,day,exercise,sets,reps,weight,unit,completed\n'
-    sessions.forEach((h) =>
-      h.exercises.forEach((e) => {
-        const row = [h.performed_on, h.day_label, e.name, e.sets, e.reps, e.weight ?? '', e.unit, e.done ? 'yes' : 'no']
-          .map((v) => `"${String(v ?? '').replaceAll('"', '""')}"`)
-          .join(',')
-        csv += row + '\n'
-      }),
-    )
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'gym-tracker.csv'
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
+  const tabs = [
+    ['plan', 'Plan'],
+    ['workouts', 'Workouts'],
+    ['library', 'Library'],
+    ['history', 'History'],
+  ]
 
   return (
     <>
       <header>
         <div className="header-top">
-          <h1>Strength Tracker</h1>
+          <h1>Workout</h1>
           <button className="link" onClick={handleSignOut}>Sign out</button>
         </div>
         <div className="tabs">
-          <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>Workout</button>
-          <button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}>History</button>
-          <button className={view === 'editor' ? 'active' : ''} onClick={() => setView('editor')}>Edit</button>
+          {tabs.map(([id, label]) => (
+            <button key={id} className={view === id ? 'active' : ''} onClick={() => setView(id)}>
+              {label}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -122,71 +163,34 @@ function AppShell({ user, signOut }) {
         {error && <section className="card auth-msg error">{error}</section>}
         {loading && <Centered>Loading your workouts…</Centered>}
 
-        {!loading && view === 'home' && (
-          <>
-            {session && (
-              <section className="card resume">
-                <div>Workout in progress — <strong>{session.dayLabel}</strong></div>
-                <button className="primary" onClick={() => setView('session')}>Resume</button>
-              </section>
-            )}
-
-            {days.length === 0 ? (
-              <section className="card">No workouts yet. Use <strong>Edit</strong> to add some.</section>
-            ) : (
-              <>
-                <div className="day-picker">
-                  {days.map((d) => (
-                    <button
-                      key={d.id}
-                      className={activeDay?.id === d.id ? 'day active' : 'day'}
-                      onClick={() => setActiveDayId(d.id)}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-
-                {activeDay && (
-                  <section className="card">
-                    <h2>{activeDay.label}</h2>
-                    <ul className="preview">
-                      {activeDay.exercises.map((x) => (
-                        <li key={x.id}>
-                          <span>{x.name}</span>
-                          <span className="small">{x.sets} × {x.reps}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-
-                <button className="primary big start" onClick={startWorkout}>▶ Start workout</button>
-              </>
-            )}
-          </>
+        {!loading && view === 'plan' && (
+          <Plan
+            data={data}
+            liveSession={session}
+            onStart={startWorkout}
+            onResume={() => setView('session')}
+          />
         )}
 
         {!loading && view === 'session' && session && (
           <Session
             session={session}
-            dayLabel={session.dayLabel}
             onSetWeight={setWeight}
             onToggleDone={toggleDone}
+            onChooseAlternate={chooseAlternate}
+            onPatchSimple={patchSimple}
             onFinish={finishWorkout}
             onCancel={cancelWorkout}
           />
         )}
         {!loading && view === 'session' && !session && (
-          <section className="card">No active workout. Go to Workout to start one.</section>
+          <section className="card">No active workout. Go to <strong>Plan</strong> to start one.</section>
         )}
 
+        {!loading && view === 'workouts' && <Workouts data={data} />}
+        {!loading && view === 'library' && <Library data={data} />}
         {!loading && view === 'history' && (
-          <History history={sessions} onDelete={removeSession} onExport={exportCSV} />
-        )}
-
-        {!loading && view === 'editor' && (
-          <WorkoutEditor data={data} onDone={() => setView('home')} />
+          <History history={sessions} onDelete={removeSession} />
         )}
       </main>
     </>

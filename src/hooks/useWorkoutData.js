@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as db from '../lib/db.js'
 
-// Loads the signed-in user's workout config and history from Supabase,
+// Loads the signed-in user's library, workouts, weekly plan and history,
 // seeding the default program on first use.
 export function useWorkoutData(userId) {
-  const [days, setDays] = useState([])
+  const [library, setLibrary] = useState([])
+  const [alternates, setAlternates] = useState({}) // exerciseId -> [alternateId]
+  const [workouts, setWorkouts] = useState([])
+  const [schedule, setSchedule] = useState([])
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -14,14 +17,22 @@ export function useWorkoutData(userId) {
     setLoading(true)
     setError(null)
     try {
-      let fetched = await db.fetchDays()
-      if (fetched.length === 0) {
+      let lib = await db.fetchLibrary()
+      if (lib.length === 0) {
         await db.seedDefaults(userId)
-        fetched = await db.fetchDays()
+        lib = await db.fetchLibrary()
       }
-      const history = await db.fetchSessions()
-      setDays(fetched)
-      setSessions(history)
+      const [alts, w, sched, hist] = await Promise.all([
+        db.fetchAlternates(),
+        db.fetchWorkouts(),
+        db.fetchSchedule(),
+        db.fetchSessions(),
+      ])
+      setLibrary(lib)
+      setAlternates(alts)
+      setWorkouts(w)
+      setSchedule(sched)
+      setSessions(hist)
     } catch (e) {
       setError(e.message || String(e))
     } finally {
@@ -33,11 +44,10 @@ export function useWorkoutData(userId) {
     load()
   }, [load])
 
-  // Sessions
   const saveSession = useCallback(
     async (session) => {
-      const row = await db.insertSession(userId, session)
-      setSessions((prev) => [row, ...prev])
+      await db.insertSession(userId, session)
+      setSessions(await db.fetchSessions())
     },
     [userId],
   )
@@ -48,14 +58,16 @@ export function useWorkoutData(userId) {
   }, [])
 
   return {
-    days,
+    library,
+    alternates,
+    workouts,
+    schedule,
     sessions,
     loading,
     error,
     reload: load,
     saveSession,
     removeSession,
-    // Config mutations (used by the editor); reload() resyncs afterwards.
     db,
     userId,
   }

@@ -49,7 +49,21 @@ button.big { width: 100%; font-size: 18px; min-height: 56px; }
 button.start { margin-top: 6px; }
 
 .tabs { display: flex; gap: 8px; }
-.tabs button { flex: 1; }
+.tabs button { flex: 1; padding: 10px 6px; font-size: 15px; min-height: 44px; }
+
+/* Form controls — match the dark theme (previously unstyled, looked broken) */
+input, select, textarea {
+  font: inherit;
+  color: var(--text);
+  background: #11141a;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+textarea { min-height: 72px; resize: vertical; width: 100%; }
+select { appearance: none; -webkit-appearance: none; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
 
 .card {
   background: var(--card);
@@ -151,3 +165,57 @@ code { background: #11141a; padding: 2px 5px; border-radius: 6px; font-size: 13p
   .actions { flex-direction: row; }
   .actions button { flex: 1; }
 }
+
+/* ── Plan ─────────────────────────────────────────────────────────────────── */
+.plan-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.plan-main { min-width: 0; }
+.plan-title { display: flex; align-items: center; gap: 8px; }
+.cat-icon { font-size: 20px; }
+.plan-name { font-weight: 700; font-size: 16px; }
+.plan-controls { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.dow { min-height: 44px; padding: 8px 10px; }
+button.start-sm { min-height: 44px; padding: 8px 14px; }
+.add-plan { display: flex; gap: 8px; align-items: center; }
+.add-plan select { flex: 1; }
+button.delete {
+  background: #2a1417; border-color: #5b2330; color: #fca5a5;
+}
+
+/* ── Session ──────────────────────────────────────────────────────────────── */
+.exercise-actions { display: flex; flex-direction: column; gap: 10px; }
+.swapped { color: var(--accent); font-size: 13px; font-weight: 500; }
+.alt { position: relative; }
+button.alt-toggle {
+  background: none; border: 1px solid var(--line); color: var(--accent);
+  min-height: 40px; width: 100%; font-size: 14px;
+}
+.alt-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+button.alt-option {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; text-align: left; min-height: 44px;
+}
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+.field input, .field textarea { width: 100%; }
+
+/* ── Workouts builder + Library ───────────────────────────────────────────── */
+.create-row { display: flex; flex-direction: column; gap: 12px; }
+.create-fields { display: flex; gap: 8px; flex-wrap: wrap; }
+.create-fields input { flex: 1; min-width: 140px; }
+.cat-select { min-height: 44px; }
+.wex-name { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; }
+button.ex-del-sm { min-height: 36px; padding: 4px 12px; font-size: 14px; }
+.add-ex-row { display: flex; gap: 8px; margin-top: 12px; }
+.add-ex-row select { flex: 1; }
+.muscle-head { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.lib-ex { border-top: 1px solid var(--line); padding: 14px 0; }
+.lib-ex:first-of-type { border-top: 0; }
+.lib-ex-top { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.lib-ex-top .ex-name { flex: 1; font-weight: 600; }
+.alt-checklist { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.alt-check {
+  display: flex; align-items: center; gap: 6px; font-size: 14px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+}
+.alt-check.on { border-color: var(--accent); color: var(--accent); }
+.alt-check input { min-height: 0; width: auto; }
+.notes { margin: 8px 0 0; white-space: pre-wrap; }
