@@ -137,26 +137,26 @@ function AppShell({ user, signOut }) {
   }
 
   const tabs = [
-    ['plan', 'Plan'],
-    ['workouts', 'Workouts'],
-    ['library', 'Library'],
-    ['history', 'History'],
+    ['plan', 'Plan', 'calendar'],
+    ['workouts', 'Workouts', 'dumbbell'],
+    ['library', 'Library', 'book'],
+    ['history', 'History', 'clock'],
   ]
+  const titles = {
+    plan: 'Plan',
+    workouts: 'Workouts',
+    library: 'Library',
+    history: 'History',
+    session: session?.workoutName || 'Workout',
+  }
 
   return (
-    <>
+    <div className="app">
       <header>
-        <div className="header-top">
-          <h1>Workout</h1>
-          <button className="link" onClick={handleSignOut}>Sign out</button>
-        </div>
-        <div className="tabs">
-          {tabs.map(([id, label]) => (
-            <button key={id} className={view === id ? 'active' : ''} onClick={() => setView(id)}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <h1>{titles[view]}</h1>
+        <button className="icon-btn" onClick={handleSignOut} aria-label="Sign out">
+          <Icon name="signout" />
+        </button>
       </header>
 
       <main>
@@ -193,8 +193,43 @@ function AppShell({ user, signOut }) {
           <History history={sessions} onDelete={removeSession} />
         )}
       </main>
-    </>
+
+      {view !== 'session' && (
+        <nav className="tabbar">
+          {tabs.map(([id, label, icon]) => (
+            <button
+              key={id}
+              className={view === id ? 'tab active' : 'tab'}
+              onClick={() => setView(id)}
+              aria-label={label}
+            >
+              <Icon name={icon} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+    </div>
   )
+}
+
+// Minimal stroke icons (1.75 weight) for the bottom nav + header.
+function Icon({ name }) {
+  const p = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round' }
+  switch (name) {
+    case 'calendar':
+      return (<svg {...p}><rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9h18M8 2.5v4M16 2.5v4" /></svg>)
+    case 'dumbbell':
+      return (<svg {...p}><path d="M6.5 8v8M3.5 9.5v5M17.5 8v8M20.5 9.5v5M6.5 12h11" /></svg>)
+    case 'book':
+      return (<svg {...p}><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19a2 2 0 0 1 2-2h13" /></svg>)
+    case 'clock':
+      return (<svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /></svg>)
+    case 'signout':
+      return (<svg {...p}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>)
+    default:
+      return null
+  }
 }
 
 function Centered({ children }) {
