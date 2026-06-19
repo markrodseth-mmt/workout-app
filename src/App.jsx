@@ -35,7 +35,7 @@ function newSession(workout, library, alternates) {
     workoutName: workout.name,
     category: 'gym',
     date: todayISO(),
-    exercises: workout.exercises.map((we) => ({
+    exercises: (workout.exercises || []).map((we) => ({
       exerciseId: we.exercise_id,
       swappedFromId: null,
       name: we.exercise?.name ?? 'Exercise',

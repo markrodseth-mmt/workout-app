@@ -89,7 +89,7 @@ export default function Plan({ data, liveSession, onStart, onResume }) {
                   <option key={i} value={i}>{d}</option>
                 ))}
               </select>
-              <button className="primary start-sm" onClick={() => onStart(w)}>▶ Start</button>
+              <button className="primary start-sm" onClick={() => onStart(workoutById[w.id] || w)}>▶ Start</button>
               <button
                 className="delete"
                 disabled={busy}
