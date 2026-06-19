@@ -216,7 +216,17 @@ button.start-sm { flex: 2; min-height: 46px; padding: 0 14px; }
 .exercise-card { transition: border-color 0.2s ease, background 0.2s ease; }
 .exercise-card.done { border-color: rgba(52, 211, 153, 0.45); background: var(--good-bg); }
 .exercise-top { margin-bottom: 16px; }
+.exercise-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .exercise-name { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.info-btn {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; margin: -6px -6px 0 0;
+  border-radius: 999px; color: var(--muted);
+  text-decoration: none; -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.info-btn:active { background: var(--surface-3); color: var(--accent); }
 .swapped { color: var(--accent); font-size: 13px; font-weight: 600; }
 
 /* Weight stepper */

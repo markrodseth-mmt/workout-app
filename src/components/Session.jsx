@@ -5,6 +5,21 @@ function round(n) {
   return Math.round(n * 100) / 100
 }
 
+// Open a YouTube search for how to perform an exercise.
+function youtubeHowTo(name) {
+  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent('how to do ' + name + ' exercise')
+}
+
+function InfoIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 7.75v.5" />
+    </svg>
+  )
+}
+
 function WeightStepper({ exercise, onSetWeight }) {
   if (exercise.weight == null) {
     return <div className="weight bodyweight">Bodyweight</div>
@@ -70,9 +85,21 @@ function GymSession({ session, onSetWeight, onToggleDone, onChooseAlternate, onF
       {session.exercises.map((e, i) => (
         <section className={e.done ? 'card exercise-card done' : 'card exercise-card'} key={i}>
           <div className="exercise-top">
-            <div className="exercise-name">
-              {e.name}
-              {e.swappedFromId && <span className="swapped"> (swapped)</span>}
+            <div className="exercise-head">
+              <div className="exercise-name">
+                {e.name}
+                {e.swappedFromId && <span className="swapped"> (swapped)</span>}
+              </div>
+              <a
+                className="info-btn"
+                href={youtubeHowTo(e.name)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`How to do ${e.name} — opens YouTube`}
+                title="How to do this exercise"
+              >
+                <InfoIcon />
+              </a>
             </div>
             <div className="small">{e.sets} sets × {e.reps}{e.muscleGroup ? ` · ${e.muscleGroup}` : ''}</div>
           </div>
