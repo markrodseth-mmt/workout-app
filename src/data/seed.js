@@ -8,6 +8,8 @@
 //   Day 2 – Muscle   : moderate reps (8–15), machines/DB, run as supersets
 //                      (pec deck+lateral, leg curl+calf, curl+pushdown) to fit ~1h.
 //   Day 3 – Athletic : unilateral, explosive, carries & core.
+//   Day 4 – Kettlebell & Core : kettlebell ballistics/grinds plus anti-rotation
+//                      and anti-lateral-flexion core stability work.
 // Each major muscle is trained 2–3×/week. Hamstrings, side delts and calves
 // (previously untrained) are now covered.
 
@@ -36,6 +38,14 @@ export const seedLibrary = [
   { name: 'DB Lateral Raise',       muscle_group: 'Shoulders', default_sets: 4, default_reps: '15',           default_weight: 8,     step: 1,   unit: 'kg each' },
   { name: 'Standing Calf Raise',    muscle_group: 'Calves',    default_sets: 4, default_reps: '12',           default_weight: 40,    step: 5,   unit: 'kg' },
   { name: 'DB Push Press',          muscle_group: 'Shoulders', default_sets: 3, default_reps: '8',            default_weight: 15,    step: 2.5, unit: 'kg each' },
+  { name: 'Renegade Row',           muscle_group: 'Back',      default_sets: 3, default_reps: '8 each side',  default_weight: 16,    step: 2,   unit: 'kg each' },
+  { name: '1-Arm Kettlebell Swing', muscle_group: 'Glutes',    default_sets: 3, default_reps: '10 each side', default_weight: 16,    step: 4,   unit: 'kg' },
+  { name: 'Kettlebell Clean & Press', muscle_group: 'Shoulders', default_sets: 3, default_reps: '6 each side', default_weight: 16,  step: 2,   unit: 'kg' },
+  { name: 'Windmill',               muscle_group: 'Core',      default_sets: 3, default_reps: '6 each side',  default_weight: 12,    step: 2,   unit: 'kg' },
+  { name: 'Hardstyle Side Plank',   muscle_group: 'Core',      default_sets: 3, default_reps: '30 sec each side', default_weight: null, step: 2.5, unit: 'bodyweight' },
+  { name: 'Bird Dog',               muscle_group: 'Core',      default_sets: 3, default_reps: '10 each side', default_weight: null,  step: 2.5, unit: 'bodyweight' },
+  { name: 'Glute Bridge',           muscle_group: 'Glutes',    default_sets: 3, default_reps: '15',           default_weight: null,  step: 2.5, unit: 'bodyweight' },
+  { name: 'Suitcase Carry',         muscle_group: 'Core',      default_sets: 3, default_reps: '30 m each side', default_weight: 24,  step: 4,   unit: 'kg' },
 ]
 
 // Each group is a set of mutually-interchangeable exercises. Seeded as
@@ -47,6 +57,10 @@ export const seedAlternateGroups = [
   ['Walking Lunges', 'Bulgarian Split Squat'],
   ['Romanian Deadlift', 'Seated Leg Curl'],
   ['Seated DB Shoulder Press', 'DB Push Press'],
+  ['Suitcase Carry', "Farmer's Carry"],
+  ['Hardstyle Side Plank', 'Plank'],
+  ['Dead Bug', 'Bird Dog'],
+  ['1-Arm Kettlebell Swing', 'Hip Thrust'],
 ]
 
 // exercises: [name, sets, reps, target_weight, step]
@@ -95,11 +109,28 @@ export const seedWorkouts = [
       ['Dead Bug', 3, '10 each side', null, 2.5],
     ],
   },
+  {
+    // Kettlebell conditioning + core stability. Explosive first, then grinds,
+    // loaded carries, and floor core. Ballistics power the posterior chain;
+    // windmills/side planks/suitcase carries train anti-lateral-flexion.
+    name: 'Day 4 – Kettlebell & Core', category: 'gym',
+    exercises: [
+      ['1-Arm Kettlebell Swing', 3, '10 each side', 16, 4],
+      ['Kettlebell Clean & Press', 3, '6 each side', 16, 2],
+      ['Renegade Row', 3, '8 each side', 16, 2],
+      ['Windmill', 3, '6 each side', 12, 2],
+      ['Suitcase Carry', 3, '30 m each side', 24, 4],
+      ['Hardstyle Side Plank', 3, '30 sec each side', null, 2.5],
+      ['Bird Dog', 3, '10 each side', null, 2.5],
+      ['Glute Bridge', 3, '15', null, 2.5],
+      ['Dead Bug', 3, '10 each side', null, 2.5],
+    ],
+  },
   { name: 'Tennis', category: 'tennis' },
   { name: 'Yoga', category: 'yoga' },
 ]
 
 // The week's plan, by workout name. day_of_week is left unpinned (null).
-export const seedSchedule = ['Day 1 – Strength', 'Day 2 – Muscle', 'Day 3 – Athletic']
+export const seedSchedule = ['Day 1 – Strength', 'Day 2 – Muscle', 'Day 3 – Athletic', 'Day 4 – Kettlebell & Core']
 
 export const CATEGORIES = ['gym', 'tennis', 'yoga', 'other']
